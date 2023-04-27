@@ -728,7 +728,7 @@
           "$ref":"#/anchor/defaultValue"
         },
         "aggregation": {
-          "enum": ["SUM", "COUNT", "MAX", "MIN", "AVG", "LATEST", "AVG_POOLING", "MAX_POOLING", "MIN_POOLING"]
+          "enum": ["SUM", "COUNT", "COUNT_DISTINCT", "MAX", "MIN", "AVG", "LATEST", "AVG_POOLING", "MAX_POOLING", "MIN_POOLING"]
         },
         "window": {
           "$ref":"#/anchor/durationPattern"

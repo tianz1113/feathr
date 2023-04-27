@@ -11,7 +11,7 @@ class SlidingWindowAggregationType(Enum):
     MAX = "maximum"
     MIN = "minium"
     AVG = "average"
-
+    COUNT_DISTINCT = "count_distinct"
 
 class SlidingWindowEmbeddingAggregationType(Enum):
     """
