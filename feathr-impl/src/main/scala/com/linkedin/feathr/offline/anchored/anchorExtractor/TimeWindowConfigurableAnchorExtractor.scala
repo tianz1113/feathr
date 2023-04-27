@@ -91,6 +91,7 @@ private[offline] class TimeWindowConfigurableAnchorExtractor(@JsonProperty("feat
             case AggregationType.SUM => sum(expr(colName))
             case AggregationType.AVG => avg(expr(colName))
             case AggregationType.COUNT => count(expr(colName))
+            case AggregationType.COUNT_DISTINCT => approx_count_distinct(expr(colName))
             case AggregationType.MAX_POOLING => first(expr(colName))
             case AggregationType.MIN_POOLING => first(expr(colName))
             case AggregationType.AVG_POOLING => first(expr(colName))
