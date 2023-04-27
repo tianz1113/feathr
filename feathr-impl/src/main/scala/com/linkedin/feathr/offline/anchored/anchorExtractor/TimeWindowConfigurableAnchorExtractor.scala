@@ -161,6 +161,7 @@ private[offline] class TimeWindowConfigurableAnchorExtractor(@JsonProperty("feat
             case AggregationType.SUM => sum(metricColExpr)
             case AggregationType.AVG => avg(metricColExpr)
             case AggregationType.COUNT => count(metricColExpr)
+            case AggregationType.COUNT_DISTINCT => approx_count_distinct(expr(colName))
             case tp =>
               throw new FeathrConfigException(
                 ErrorLabel.FEATHR_USER_ERROR,

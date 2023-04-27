@@ -756,7 +756,7 @@
           "$ref": "#/anchor/defExpr"
         },
         "aggregation": {
-          "enum": ["SUM", "COUNT", "MAX", "AVG", "AVG_POOLING", "MAX_POOLING", "MIN_POOLING"]
+          "enum": ["SUM", "COUNT", "COUNT_DISTINCT", "MAX", "AVG", "AVG_POOLING", "MAX_POOLING", "MIN_POOLING"]
         },
         "windowParameters": {
           "type": "object",
