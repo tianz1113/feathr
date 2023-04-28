@@ -849,6 +849,19 @@ class FeathrClient(object):
         if monitoring_config_str:
             arguments.append('--monitoring-config')
             arguments.append(monitoring_config_str)
+        
+        print("job_name", self.project_name + '_feathr_feature_materialization_job')
+        print("main_jar_path", self._FEATHR_JOB_JAR_PATH)
+        print("python_files", cloud_udf_paths)
+        print("job_tags", job_tags)
+        print("arguments", arguments)
+        print("configuration", execution_configurations)
+        self.logger("job_name", self.project_name + '_feathr_feature_materialization_job')
+        self.logger("main_jar_path", self._FEATHR_JOB_JAR_PATH)
+        self.logger("python_files", cloud_udf_paths)
+        self.logger("job_tags", job_tags)
+        self.logger("arguments", arguments)
+        self.logger("configuration", execution_configurations)
         return self.feathr_spark_launcher.submit_feathr_job(
             job_name=self.project_name + '_feathr_feature_materialization_job',
             main_jar_path=self._FEATHR_JOB_JAR_PATH,
