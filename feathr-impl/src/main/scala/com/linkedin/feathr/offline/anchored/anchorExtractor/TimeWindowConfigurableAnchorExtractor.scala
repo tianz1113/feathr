@@ -69,6 +69,13 @@ private[offline] class TimeWindowConfigurableAnchorExtractor(@JsonProperty("feat
         }
         val aggFuncName = featureDef.timeWindowFeatureDefinition.aggregationType.toString
         val aggType = AggregationType.withName(aggFuncName)
+        
+        println(aggType)
+        println(aggFuncName)
+        throw new FeathrConfigException(
+          ErrorLabel.FEATHR_USER_ERROR, 
+          s"heyheyhey ${aggFuncName} ${aggType}")
+
         val colName = getFeatureColumnName(featureName, aggFuncName)
 
         val baseAggCol = if (featureDef.timeWindowFeatureDefinition.groupBy.isDefined) {
