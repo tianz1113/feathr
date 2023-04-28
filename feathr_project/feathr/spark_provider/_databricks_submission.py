@@ -224,20 +224,20 @@ class _FeathrDatabricksJobLauncher(SparkJobLauncher):
             )
 
         # the feathr main jar file is anyway needed regardless it's pyspark or scala spark
-        # if not main_jar_path:
-        #     logger.info(
-        #         f"Main JAR file is not set, using default package '{get_maven_artifact_fullname()}' from Maven")
-        #     submission_params['libraries'][0]['maven'] = {
-        #         "coordinates": get_maven_artifact_fullname()}
-        #     # Add json-schema dependency
-        #     # TODO: find a proper way deal with unresolved dependencies
-        #     # Since we are adding another entry to the config, make sure that the spark config passed as part of execution also contains a libraries array of atleast size 2
-        #     # else you will get List Index Out of Bound exception
-        #     # Example from feathr_config.yaml -
-        #     # config_template: {"run_name":"FEATHR_FILL_IN",.....,"libraries":[{}, {}],".......}
-        # else:
-        #     submission_params["libraries"][0]["jar"] = self.upload_or_get_cloud_path(
-        #         main_jar_path)
+        if not main_jar_path:
+            logger.info(
+                f"Main JAR file is not set, using default package '{get_maven_artifact_fullname()}' from Maven")
+            submission_params['libraries'][0]['maven'] = {
+                "coordinates": get_maven_artifact_fullname()}
+            # Add json-schema dependency
+            # TODO: find a proper way deal with unresolved dependencies
+            # Since we are adding another entry to the config, make sure that the spark config passed as part of execution also contains a libraries array of atleast size 2
+            # else you will get List Index Out of Bound exception
+            # Example from feathr_config.yaml -
+            # config_template: {"run_name":"FEATHR_FILL_IN",.....,"libraries":[{}, {}],".......}
+        else:
+            submission_params["libraries"][0]["jar"] = self.upload_or_get_cloud_path(
+                main_jar_path)
         # see here for the submission parameter definition https://docs.microsoft.com/en-us/azure/databricks/dev-tools/api/2.0/jobs#--request-structure-6
         if python_files:
             # this is a pyspark job. definition here: https://docs.microsoft.com/en-us/azure/databricks/dev-tools/api/2.0/jobs#--sparkpythontask
