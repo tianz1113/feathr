@@ -103,10 +103,10 @@ private[offline] class TimeWindowConfigurableAnchorExtractor(@JsonProperty("feat
             case AggregationType.MIN_POOLING => first(expr(colName))
             case AggregationType.AVG_POOLING => first(expr(colName))
             case AggregationType.LATEST => last(expr(colName), true)
-            case tp =>
-              throw new FeathrConfigException(
-                ErrorLabel.FEATHR_USER_ERROR,
-                s"AggregationType ${tp} is not supported in aggregateAsColumns of TimeWindowConfigurableAnchorExtractor.")
+            // case tp =>
+            //   throw new FeathrConfigException(
+            //     ErrorLabel.FEATHR_USER_ERROR,
+            //     s"AggregationType ${tp} is not supported in aggregateAsColumns of TimeWindowConfigurableAnchorExtractor.")
           }
           aggCol.alias(featureName)
         }
