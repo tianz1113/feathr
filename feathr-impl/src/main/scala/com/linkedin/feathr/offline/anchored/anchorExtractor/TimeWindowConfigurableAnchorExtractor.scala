@@ -72,9 +72,9 @@ private[offline] class TimeWindowConfigurableAnchorExtractor(@JsonProperty("feat
         
         println(aggType)
         println(aggFuncName)
-        throw new FeathrConfigException(
-          ErrorLabel.FEATHR_USER_ERROR, 
-          s"heyheyhey ${aggFuncName} ${aggType}")
+//        throw new FeathrConfigException(
+//          ErrorLabel.FEATHR_USER_ERROR,
+//          s"heyheyhey ${aggFuncName} ${aggType}")
 
         val colName = getFeatureColumnName(featureName, aggFuncName)
 
