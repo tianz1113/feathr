@@ -26,6 +26,7 @@ public class SlidingWindowAggregationBuilder extends SlidingWindowOperationBuild
       put(TimeWindowAggregationType.MAX, AggregationType.MAX);
       put(TimeWindowAggregationType.SUM, AggregationType.SUM);
       put(TimeWindowAggregationType.COUNT, AggregationType.COUNT);
+//      put(TimeWindowAggregationType.COUNT_DISTINCT, AggregationType.COUNT_DISTINCT);
       put(TimeWindowAggregationType.LATEST, AggregationType.LATEST);
       put(TimeWindowAggregationType.AVG_POOLING, AggregationType.AVG_POOLING);
       put(TimeWindowAggregationType.MAX_POOLING, AggregationType.MAX_POOLING);

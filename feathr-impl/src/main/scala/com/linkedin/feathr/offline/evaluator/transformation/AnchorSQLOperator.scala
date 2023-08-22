@@ -50,7 +50,8 @@ object AnchorSQLOperator extends TransformationOperator {
     val sqlKeyExtractor = new SQLSourceKeyExtractor(keySeq)
     val withKeyColumnDF = if (appendKeyColumns) sqlKeyExtractor.appendKeyColumns(inputDf) else inputDf
     val withFeaturesDf = createFeatureDF(withKeyColumnDF, transformedCols.keys.toSeq)
-    val outputJoinKeyColumnNames = getFeatureKeyColumnNames(sqlKeyExtractor, withFeaturesDf)
+    // val outputJoinKeyColumnNames = getFeatureKeyColumnNames(sqlKeyExtractor, withFeaturesDf)
+    val outputJoinKeyColumnNames = sqlKeyExtractor.getKeyColumnNames()
 
     // Mark as FDS format if it is the FDSExtract SQL function
     featureNameToSqlExpr.filter(ele => ele._2.featureExpr.contains(USER_FACING_MULTI_DIM_FDS_TENSOR_UDF_NAME))

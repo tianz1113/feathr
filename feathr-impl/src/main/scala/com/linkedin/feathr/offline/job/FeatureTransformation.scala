@@ -109,11 +109,13 @@ private[offline] object FeatureTransformation {
    * @return feature key column names
    */
   def getFeatureKeyColumnNames(sourceKeyExtractor: SourceKeyExtractor, withKeyColumnDF: DataFrame): Seq[String] = {
-      if (withKeyColumnDF.head(1).isEmpty) {
-        sourceKeyExtractor.getKeyColumnNames(None)
-      } else {
-        sourceKeyExtractor.getKeyColumnNames(Some(withKeyColumnDF.first()))
-      }
+//      if (withKeyColumnDF.head(1).isEmpty) {
+//        sourceKeyExtractor.getKeyColumnNames(None)
+//      } else {
+//        sourceKeyExtractor.getKeyColumnNames(Some(withKeyColumnDF.first()))
+//      }
+    // sourceKeyExtractor.getKeyColumnNames(Some(withKeyColumnDF.first()))
+    sourceKeyExtractor.getKeyColumnNames(None)
   }
 
   // get the feature column prefix which will be appended to all feature columns of the dataframe returned by the transformer
@@ -1457,9 +1459,10 @@ private[offline] object FeatureTransformation {
   private[offline] def getStandardizedKeyNames(joinKeySize: Int) = {
     Range(0, joinKeySize).map("key" + _)
   }
-  // max number of feature groups that can be calculated at the same time
+  // max number of feature groups (features from the same source )that can be calculated at the same time
   // each group will be a separate spark job
-  private val MAX_PARALLEL_FEATURE_GROUP = 10
+  // private val MAX_PARALLEL_FEATURE_GROUP = 10
+  private val MAX_PARALLEL_FEATURE_GROUP = sys.env.getOrElse("MAX_PARALLEL_FEATURE_GROUP","100").toInt
 }
 
 private[offline] case class FeatureTypeInferenceContext(featureTypeAccumulators: Map[String, FeatureTypeAccumulator])

@@ -69,6 +69,13 @@ private[offline] class TimeWindowConfigurableAnchorExtractor(@JsonProperty("feat
         }
         val aggFuncName = featureDef.timeWindowFeatureDefinition.aggregationType.toString
         val aggType = AggregationType.withName(aggFuncName)
+        
+        println(aggType)
+        println(aggFuncName)
+//        throw new FeathrConfigException(
+//          ErrorLabel.FEATHR_USER_ERROR,
+//          s"heyheyhey ${aggFuncName} ${aggType}")
+
         val colName = getFeatureColumnName(featureName, aggFuncName)
 
         val baseAggCol = if (featureDef.timeWindowFeatureDefinition.groupBy.isDefined) {
@@ -91,14 +98,15 @@ private[offline] class TimeWindowConfigurableAnchorExtractor(@JsonProperty("feat
             case AggregationType.SUM => sum(expr(colName))
             case AggregationType.AVG => avg(expr(colName))
             case AggregationType.COUNT => count(expr(colName))
+            case AggregationType.COUNT_DISTINCT => approx_count_distinct(expr(colName))
             case AggregationType.MAX_POOLING => first(expr(colName))
             case AggregationType.MIN_POOLING => first(expr(colName))
             case AggregationType.AVG_POOLING => first(expr(colName))
             case AggregationType.LATEST => last(expr(colName), true)
-            case tp =>
-              throw new FeathrConfigException(
-                ErrorLabel.FEATHR_USER_ERROR,
-                s"AggregationType ${tp} is not supported in aggregateAsColumns of TimeWindowConfigurableAnchorExtractor.")
+            // case tp =>
+            //   throw new FeathrConfigException(
+            //     ErrorLabel.FEATHR_USER_ERROR,
+            //     s"AggregationType ${tp} is not supported in aggregateAsColumns of TimeWindowConfigurableAnchorExtractor.")
           }
           aggCol.alias(featureName)
         }
@@ -160,6 +168,7 @@ private[offline] class TimeWindowConfigurableAnchorExtractor(@JsonProperty("feat
             case AggregationType.SUM => sum(metricColExpr)
             case AggregationType.AVG => avg(metricColExpr)
             case AggregationType.COUNT => count(metricColExpr)
+            case AggregationType.COUNT_DISTINCT => approx_count_distinct(expr(colName))
             case tp =>
               throw new FeathrConfigException(
                 ErrorLabel.FEATHR_USER_ERROR,

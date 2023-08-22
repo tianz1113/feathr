@@ -16,7 +16,8 @@ import com.linkedin.feathr.offline.transformation.DataFrameDefaultValueSubstitut
 import com.linkedin.feathr.offline.transformation.FeatureColumnFormat
 import com.linkedin.feathr.offline.transformation.FeatureColumnFormat.{FDS_TENSOR, FeatureColumnFormat, RAW}
 import com.linkedin.feathr.swj.{FactData, GroupBySpec, LabelData, LateralViewParams, SlidingWindowFeature, SlidingWindowJoin, WindowSpec}
-import com.linkedin.feathr.swj.aggregate.{AggregationSpec, AggregationType, AvgAggregate, AvgPoolingAggregate, CountAggregate, LatestAggregate, MaxAggregate, MaxPoolingAggregate, MinAggregate, MinPoolingAggregate, SumAggregate}
+import com.linkedin.feathr.swj.aggregate.{AggregationSpec, AggregationType, AvgAggregate, AvgPoolingAggregate, CountAggregate, CountDistinctAggregate, LatestAggregate, MaxAggregate, MaxPoolingAggregate, MinAggregate, MinPoolingAggregate, SumAggregate}
+
 import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.DataFrame
 
@@ -77,6 +78,7 @@ object AggregationNodeEvaluator extends NodeEvaluator {
         // In feathr's use case, we want to treat the count aggregation as simple count of non-null items.
         val rewrittenDef = s"CASE WHEN ${featureDef} IS NOT NULL THEN 1 ELSE 0 END"
         new CountAggregate(rewrittenDef)
+      case AggregationType.COUNT_DISTINCT => new CountDistinctAggregate(featureDef)
       case AggregationType.AVG => new AvgAggregate(featureDef) // TODO: deal with avg. of pre-aggregated data
       case AggregationType.MAX => new MaxAggregate(featureDef)
       case AggregationType.MIN => new MinAggregate(featureDef)

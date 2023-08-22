@@ -55,7 +55,9 @@ object AnchorUDFOperator extends TransformationOperator {
         // Note that for Spark UDFs we only support SQL keys.
         val sqlKeyExtractor = new SQLSourceKeyExtractor(keySeq)
         val withKeyColumnDF = if (appendKeyColumns) sqlKeyExtractor.appendKeyColumns(inputDf) else inputDf
-        val outputJoinKeyColumnNames = getFeatureKeyColumnNames(sqlKeyExtractor, withKeyColumnDF)
+        // val outputJoinKeyColumnNames = getFeatureKeyColumnNames(sqlKeyExtractor, withKeyColumnDF)
+        val outputJoinKeyColumnNames = sqlKeyExtractor.getKeyColumnNames()
+
 
         val tensorizedFeatureColumns = sparkExtractor.getFeatures(inputDf, Map())
         val transformedColsAndFormats: Map[(String, Column), FeatureColumnFormat] = extractor match {
@@ -92,7 +94,8 @@ object AnchorUDFOperator extends TransformationOperator {
         // Note that for Spark UDFs we only support SQL keys.
         val sqlKeyExtractor = new SQLSourceKeyExtractor(keySeq)
         val withKeyColumnDF = if (appendKeyColumns) sqlKeyExtractor.appendKeyColumns(inputDf) else inputDf
-        val outputJoinKeyColumnNames = getFeatureKeyColumnNames(sqlKeyExtractor, withKeyColumnDF)
+        // val outputJoinKeyColumnNames = getFeatureKeyColumnNames(sqlKeyExtractor, withKeyColumnDF)
+        val outputJoinKeyColumnNames = sqlKeyExtractor.getKeyColumnNames()
 
         val transformedDF = sparkExtractor.transform(inputDf)
         (transformedDF, outputJoinKeyColumnNames)
