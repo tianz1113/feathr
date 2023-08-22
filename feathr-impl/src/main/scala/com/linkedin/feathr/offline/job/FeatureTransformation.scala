@@ -1462,7 +1462,7 @@ private[offline] object FeatureTransformation {
   // max number of feature groups (features from the same source )that can be calculated at the same time
   // each group will be a separate spark job
   // private val MAX_PARALLEL_FEATURE_GROUP = 10
-  private val MAX_PARALLEL_FEATURE_GROUP = sys.env.getOrElse("MAX_PARALLEL_FEATURE_GROUP","100").toInt
+  private val MAX_PARALLEL_FEATURE_GROUP = sys.env.getOrElse("MAX_PARALLEL_FEATURE_GROUP",sys.runtime.availableProcessors().toString).toInt
 }
 
 private[offline] case class FeatureTypeInferenceContext(featureTypeAccumulators: Map[String, FeatureTypeAccumulator])
