@@ -54,7 +54,9 @@ private[offline] object SqlTransformedLeftJoinKeyColumnAppender extends JoinKeyC
   override def appendJoinKeyColunmns(keys: Seq[String], df: DataFrame): (Seq[String], DataFrame) = {
     val leftJoinColumns = keys.map(joinKey => JOIN_KEY_OBSERVATION_PREFIX + joinKey.replaceAll("[^\\w]", "_"))
     // append left join key columns
-    val leftDF = keys.zip(leftJoinColumns).foldLeft(df)((baseDF, joinKeyPair) => baseDF.withColumn(joinKeyPair._2, expr(joinKeyPair._1)))
+//    val leftDF = keys.zip(leftJoinColumns).foldLeft(df)((baseDF, joinKeyPair) => baseDF.withColumn(joinKeyPair._2, expr(joinKeyPair._1)))
+    import org.apache.spark.sql.functions._
+    val leftDF = df.select(df.columns.filterNot(leftJoinColumns.contains(_)).map(col) ++ keys.zip(leftJoinColumns).map(x=>expr(x._1).as(x._2)) :_*)
     (leftJoinColumns, leftDF)
   }
 }

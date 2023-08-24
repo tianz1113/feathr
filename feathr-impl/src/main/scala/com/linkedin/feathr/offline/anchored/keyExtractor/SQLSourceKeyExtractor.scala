@@ -56,11 +56,13 @@ class SQLSourceKeyExtractor(
     } else {
       dataFrame
     }
-    keyColumnNames
-      .zip(keyExprs)
-      .foldLeft(withLateralViewDF)((baseDF, defs) => {
-        baseDF.withColumn(defs._1, expr(defs._2))
-      })
+//    keyColumnNames
+//      .zip(keyExprs)
+//      .foldLeft(withLateralViewDF)((baseDF, defs) => {
+//        baseDF.withColumn(defs._1, expr(defs._2))
+//      })
+    import org.apache.spark.sql.functions._
+    withLateralViewDF.select(withLateralViewDF.columns.filterNot(keyColumnNames.contains).map(col) ++ keyColumnNames.zip(keyExprs).map(x=>expr(x._2).as(x._1)) :_*)
   }
 
   // override toString function so that SQL based anchor with same key expression can be grouped and

@@ -165,11 +165,14 @@ private[offline] class AnchoredFeatureJoinStep(
       // when rightDF is empty, MVEL default source key extractor might return 0 key columns
       // in such cases, we just append the right table schema to the left table,
       // so that default value can be applied later
-      featureDF.columns
-        .zip(featureDF.schema.fields)
-        .foldRight(contextDF)((nameAndfield, inputDF) => {
-          inputDF.withColumn(nameAndfield._1, lit(null).cast(nameAndfield._2.dataType))
-        })
+//      featureDF.columns
+//        .zip(featureDF.schema.fields)
+//        .foldRight(contextDF)((nameAndfield, inputDF) => {
+//          inputDF.withColumn(nameAndfield._1, lit(null).cast(nameAndfield._2.dataType))
+//        })
+      import org.apache.spark.sql.functions._
+      val newFields = featureDF.columns.zip(featureDF.schema.fields).toMap
+      contextDF.select(contextDF.columns.filterNot(newFields.contains).map(col) ++ newFields.map(x=>lit(null).cast(x._2.dataType).as(x._1)) :_*)
     } else {
       val isSanityCheckMode = FeathrUtils.getFeathrJobParam(ctx.sparkSession.sparkContext.getConf, FeathrUtils.ENABLE_SANITY_CHECK_MODE).toBoolean
       if (isSanityCheckMode) {
@@ -207,7 +210,9 @@ private[offline] class AnchoredFeatureJoinStep(
       }
 
       val dfWithNullRowsAdded = if (shouldFilterNulls && !nullDf.isEmpty) {
-        val nullDfWithFeatureCols = featureNames.foldLeft(joinedDf)((s, x) => s.withColumn(x, lit(null)))
+//        val nullDfWithFeatureCols = featureNames.foldLeft(joinedDf)((s, x) => s.withColumn(x, lit(null)))
+        import org.apache.spark.sql.functions._
+        val nullDfWithFeatureCols = joinedDf.select(joinedDf.columns.filterNot(featureNames.contains).map(col) ++ featureNames.map(x=>lit(null).as(x)) :_*)
         contextDF.union(nullDfWithFeatureCols)
       } else joinedDf
 

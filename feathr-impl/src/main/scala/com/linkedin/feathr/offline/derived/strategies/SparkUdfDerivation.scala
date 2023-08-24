@@ -52,8 +52,12 @@ class SparkUdfDerivation extends SparkUdfDerivationStrategy {
       (featureColumnName, taggedWithParam._2)
     }
     // rename all dependency column names to the parameter/argument names that user specified
+//    val withRenamedFeaturesDF =
+//      featureColumnNameToParamNameMap.foldLeft(df)((acc, featureNameToArg) => acc.withColumn(featureNameToArg._2, acc(featureNameToArg._1)))
+    import org.apache.spark.sql.functions._
+    val _featureColumnNameToParamNameMap = featureColumnNameToParamNameMap.toMap
     val withRenamedFeaturesDF =
-      featureColumnNameToParamNameMap.foldLeft(df)((acc, featureNameToArg) => acc.withColumn(featureNameToArg._2, acc(featureNameToArg._1)))
+      df.select(df.columns.filterNot(_featureColumnNameToParamNameMap.contains).map(col) ++ featureColumnNameToParamNameMap.map(x=>df(x._1).as(x._2)) :_*)
     // 2. calculate derived feature and append it as a column
     val transformedDF = derivationFunction.transform(withRenamedFeaturesDF)
     val callerKeyTags = derivedFeature.producedFeatureNames.map(ErasedEntityTaggedFeature(keyTags, _))

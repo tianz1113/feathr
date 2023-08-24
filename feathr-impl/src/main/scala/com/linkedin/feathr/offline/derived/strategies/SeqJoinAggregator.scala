@@ -49,7 +49,9 @@ private[offline] object SeqJoinAggregator {
     }
 
     val featureValueToJoinKeyColumnName = featureValueColumn zip featureColumnNames
-    featureValueToJoinKeyColumnName.foldLeft(contextDF)((s, x) => s.withColumn(x._2, x._1))
+//    featureValueToJoinKeyColumnName.foldLeft(contextDF)((s, x) => s.withColumn(x._2, x._1))
+    import org.apache.spark.sql.functions._
+    contextDF.select(contextDF.columns.filterNot(featureValueToJoinKeyColumnName.contains).map(col) ++ featureValueToJoinKeyColumnName.map(x=>x._1.as(x._2)) :_*)
   }
   /**
    * Utility method to coerce left join key columns for seq join.

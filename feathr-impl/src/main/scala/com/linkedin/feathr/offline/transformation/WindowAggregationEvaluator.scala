@@ -69,7 +69,10 @@ private[offline] object WindowAggregationEvaluator {
     }
     // Apply transformation and get transformed column
     val transformedColumns = transformer.transformAsColumns(filteredDF)
-    val transformedDF = transformedColumns.foldLeft(filteredDF)((baseDF, columnWithName) => baseDF.withColumn(columnWithName._1, columnWithName._2))
+    val _transformedColumns = transformedColumns.toMap
+    import org.apache.spark.sql.functions._
+    val transformedDF = filteredDF.select(filteredDF.columns.filterNot(_transformedColumns.contains).map(col) ++ transformedColumns.map(x=>x._2.as(x._1)) :_*)
+//    val transformedDF = transformedColumns.foldLeft(filteredDF)((baseDF, columnWithName) => baseDF.withColumn(columnWithName._1, columnWithName._2))
 
     if (TestFwkUtils.IS_DEBUGGER_ENABLED) {
       println(f"${Console.GREEN}Showing the dataset in the window: ${Console.RESET}")
