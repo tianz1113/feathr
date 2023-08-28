@@ -91,7 +91,7 @@ private[offline] class DataFrameFeatureGenerator(logicalPlan: MultiStageJoinPlan
       FeathrUtils.dumpDebugInfo(ss, featureDfWithKey._2._1.df, Set(featureDfWithKey._1),
       "transformed df in feature generation", "transformed_df_in_generation")
     }
-
+    if(MAX_WORKER.isDefined){ scaleDatabricksCluster(MAX_WORKER.get) }
     // Update features based on skip missing feature flag and empty dataframe
     val updatedAllStageFeatures = if (shouldSkipFeature) {
       allStageFeatures.filter(keyValue => !keyValue._2._1.df.isEmpty)
@@ -172,4 +172,134 @@ private[offline] class DataFrameFeatureGenerator(logicalPlan: MultiStageJoinPlan
         },
         new SqlDerivationSpark()
       ), mvelContext)
+
+  val MAX_WORKER = sys.env.get("MAX_WORKER").map(_.toInt)
+  def scaleDatabricksCluster(desireWorkerCount:Int): Unit ={
+    import scala.util.Try
+    val dbutilsOption: Option[Any] = Try{
+      val cls = Class.forName("com.databricks.dbutils_v1.DBUtilsHolder")
+      val m = cls.getDeclaredMethod("dbutils")
+      Option(m.invoke(null))
+    }.getOrElse(None)
+    val jobContext: Try[Option[(Option[String], Option[String])]] = Try(dbutilsOption.map(x => {
+      val jobsMethod = x.getClass.getDeclaredMethod("jobs")
+      val jobs = jobsMethod.invoke(x)
+      val taskValuesMethod = jobs.getClass.getMethods.filter(x => x.getName.equals("taskValues")).head
+      val taskValues = taskValuesMethod.invoke(jobs)
+      val getContextMethod = taskValues.getClass.getMethods.filter(x => x.getName.equals("getContext")).head
+      val context = getContextMethod.invoke(taskValues)
+      val apiTokenMethod = context.getClass.getMethods.filter(x => x.getName.equals("apiToken")).head
+      val apiUrlMethod = context.getClass.getMethods.filter(x => x.getName.equals("apiUrl")).head
+      (apiUrlMethod.invoke(context).asInstanceOf[Option[String]], apiTokenMethod.invoke(context).asInstanceOf[Option[String]])
+    }))
+    val notebookContext: Try[Option[(Option[String], Option[String])]] = Try(dbutilsOption.map(x => {
+      val notebookMethod = x.getClass.getDeclaredMethod("notebook")
+      val notebook = notebookMethod.invoke(x)
+      val getContextMethod = notebook.getClass.getMethods.filter(x => x.getName.equals("getContext")).head
+      val context = getContextMethod.invoke(notebook)
+      val apiTokenMethod = context.getClass.getMethods.filter(x => x.getName.equals("apiToken")).head
+      val apiUrlMethod = context.getClass.getMethods.filter(x => x.getName.equals("apiUrl")).head
+      (apiUrlMethod.invoke(context).asInstanceOf[Option[String]], apiTokenMethod.invoke(context).asInstanceOf[Option[String]])
+    }))
+    println(s"dbutilsOption $dbutilsOption")
+    val context: Option[(Option[String], Option[String])] = jobContext.getOrElse(notebookContext.getOrElse(None))
+    println(s"context $context")
+    val apiUrl: String = context.flatMap(_._1).getOrElse("")
+    val authToken = context.flatMap(_._2).getOrElse("")
+    val spark = SparkSession.builder().getOrCreate()
+    val clusterId = spark.conf.get("spark.databricks.clusterUsageTags.clusterId", "")
+    val workerCount = Try(getCurrentWorkerCount(apiUrl, authToken, clusterId))
+    println(s"workerCount $workerCount")
+    if(workerCount.map(_ != desireWorkerCount).getOrElse(false)){
+      Try(retry(){
+        setCurrentWorkerCount(apiUrl,authToken,clusterId,desireWorkerCount)
+      }).getOrElse({})
+    }
+    println(s"workerCount ${Try(getCurrentWorkerCount(apiUrl, authToken, clusterId))}")
+  }
+
+  def getCurrentWorkerCount(apiUrl: String, authToken: String, clusterId: String): Int = {
+    import org.apache.http.client.methods.HttpGet
+    import org.apache.http.impl.client.HttpClientBuilder
+    import org.json4s.JValue
+    import org.json4s.jackson.JsonMethods.parse
+
+    import scala.io._
+    val get = new HttpGet(s"$apiUrl/api/2.0/clusters/get?cluster_id=$clusterId")
+    get.setHeader("Authorization", s"Bearer $authToken")
+    val client = HttpClientBuilder.create.build
+    val getResponse = client.execute(get)
+    implicit val formats = org.json4s.DefaultFormats
+    val parsedResponse: JValue = parse(Source.fromInputStream(getResponse.getEntity.getContent).mkString)
+    val numWorkers = (parsedResponse \ "num_workers").extractOpt[Int]
+    numWorkers.getOrElse(throw new Exception(s"Not able to get current worker count $apiUrl $clusterId"))
+  }
+
+  def setCurrentWorkerCount(apiUrl: String, authToken: String, clusterId: String, desireNumWorkers: Int): Unit = {
+    import org.apache.http.client.methods.HttpPost
+    import org.apache.http.entity.{ContentType, StringEntity}
+    import org.apache.http.impl.client.HttpClientBuilder
+
+    import scala.io._
+    val client = HttpClientBuilder.create.build
+    val post = new HttpPost(s"$apiUrl/api/2.0/clusters/resize")
+    val postBody =
+      s"""
+         |{
+         |  "cluster_id": "$clusterId",
+         |  "num_workers": $desireNumWorkers
+         |}
+         |""".stripMargin
+    val reqBody = new StringEntity(postBody, "UTF-8")
+    reqBody.setContentType(ContentType.APPLICATION_JSON.getMimeType)
+    post.setEntity(reqBody)
+    post.setHeader("Authorization", s"Bearer $authToken")
+    println(postBody)
+    val postResponse = client.execute(post)
+    println(postResponse.getStatusLine)
+    println(Source.fromInputStream(postResponse.getEntity.getContent).mkString)
+    assert(postResponse.getStatusLine.getStatusCode == 200, s"Upgrade to workers:$desireNumWorkers is not successful")
+  }
+  import scala.concurrent.duration.{Duration,DurationLong}
+  private def exponentialBackoff(r: Int): Duration = scala.math.pow(2, r).round * 100 milliseconds
+
+  /**
+   * retry a particular block that can fail synchronously
+   *
+   * @param maxRetry how many times to retry before giving up
+   * @param block    the block of code to retry
+   * @return return value of the block passed in
+   */
+  def retry[T](maxRetry: Int = 10)(block: => T): T = {
+    import scala.util.{Failure, Success, Try}
+    import scala.util.control.Breaks.{break, breakable}
+
+    def doBlock() = block
+
+    var result: Option[T] = None
+    var error: Option[Throwable] = None
+    breakable {
+      for (i <- 0 until maxRetry) {
+        result = Try(doBlock()) match {
+          case Success(v) =>
+            Some(v)
+          case Failure(e) =>
+            error = Some(e)
+            val interval = exponentialBackoff(i + 1).toMillis
+            Console.err.println(s"attempt $i failed with error: [${e.getMessage} ] waiting: ${interval.toString}ms ${if (i == 0) e else null}")
+            Thread.sleep(interval)
+            None
+        }
+        if (result.isDefined) {
+          break
+        }
+      }
+    }
+    result match {
+      case Some(v) => v
+      case None =>
+        Console.err.println(s"max retries of $maxRetry exceeded, throwing error: ${error.get.getMessage} ${error.get}")
+        throw error.get
+    }
+  }
 }
