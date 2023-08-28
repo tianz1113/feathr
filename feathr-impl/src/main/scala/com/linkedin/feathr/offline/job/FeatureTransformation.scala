@@ -482,16 +482,17 @@ private[offline] object FeatureTransformation {
     val groupedAnchorToFeatureGroups: Map[FeatureGroupingCriteria, Map[FeatureAnchorWithSource, FeatureGroupWithSameTimeWindow]] =
       groupFeatures(anchorToSourceDFThisStage, requestedFeatureNames.toSet)
     println(s" ${System.currentTimeMillis()} groupedAnchorToFeatureGroups size : ${groupedAnchorToFeatureGroups.size}")
-    val counter = new java.util.concurrent.atomic.AtomicLong(groupedAnchorToFeatureGroups.size)
+    val counter = new java.util.concurrent.atomic.AtomicLong()
     val futures = groupedAnchorToFeatureGroups.map {
       case (featureGroupingFactors, anchorsWithSameSource) =>
         // use future to submit spark job asynchronously so that these feature groups can be evaluated in parallel
-        (featureGroupingFactors,Future {
+        Future {
           // evaluate each group of feature, each group of features are defined on same dataframe
           // we already group by (keyExtractor, dataframe/rdd, timeWindow), so anchorsWithSameSource contains all anchors
           // defined on this dataframe/rdd with same set of keys.
           // hence we can just take any(e.g, the first) extractor (in anchorsWithSameSource.head) to get the join keys to apply
           // bloomfilter and get key column
+          println(s" ${System.currentTimeMillis()} ${Thread.currentThread().getName} groupedAnchorToFeatureGroup Starting : ${featureGroupingFactors} ${featureGroupingFactors.source.source.location} Running:${counter.decrementAndGet()}")
           val keyExtractor = anchorsWithSameSource.head._1.featureAnchor.sourceKeyExtractor
           val featureAnchorWithSource = anchorsWithSameSource.keys.toSeq
           val selectedFeatures = anchorsWithSameSource.flatMap(_._2.featureNames).toSeq
@@ -553,21 +554,12 @@ private[offline] object FeatureTransformation {
               s"Internal error: ${computedFeatures} should be not have duplicate features, " +
                 s"this means some features are computed multiple times, current anchors: ${featureAnchorWithSource}")
           }
+          println(s" ${System.currentTimeMillis()} ${Thread.currentThread().getName} " +
+            s"groupedAnchorToFeatureGroup Completed : ${res.head._1} ${res.head._2}  size:${res.size}  Remaining:${counter.decrementAndGet()}")
           res.toMap
-        })
+        }
     }
-    futures.map(k => {
-      println(s" ${System.currentTimeMillis()} ${Thread.currentThread().getName} groupedAnchorToFeatureGroup Starting : ${k._1} ${k._1.source.source.location} ")
-      val res = Await.ready(k._2, Duration.Inf)
-      val size = if(res.isCompleted) {res.value.map(x => if (x.isSuccess) {
-        x.get.size
-      } else {
-        0
-      })} else None
-      val remaining = counter.decrementAndGet()
-      println(s" ${System.currentTimeMillis()} ${Thread.currentThread().getName} groupedAnchorToFeatureGroup Completed : ${k._1} ${k._1.source.source.location}  size:$size  Remaining:$remaining")
-      Await.result(k._2, Duration.Inf)
-    }).reduce(_ ++ _)
+    futures.map(k => Await.result(k, Duration.Inf)).reduce(_ ++ _)
   }
 
   /**
