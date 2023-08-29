@@ -492,7 +492,7 @@ private[offline] object FeatureTransformation {
           // defined on this dataframe/rdd with same set of keys.
           // hence we can just take any(e.g, the first) extractor (in anchorsWithSameSource.head) to get the join keys to apply
           // bloomfilter and get key column
-          println(s" ${System.currentTimeMillis()} ${Thread.currentThread().getName} groupedAnchorToFeatureGroup Starting : ${featureGroupingFactors} ${featureGroupingFactors.source.source.location} Running:${counter.decrementAndGet()}")
+          println(s" ${System.currentTimeMillis()} ${Thread.currentThread().getName} groupedAnchorToFeatureGroup Starting : ${featureGroupingFactors} ${featureGroupingFactors.source.source.location} Running:${counter.incrementAndGet()}")
           val keyExtractor = anchorsWithSameSource.head._1.featureAnchor.sourceKeyExtractor
           val featureAnchorWithSource = anchorsWithSameSource.keys.toSeq
           val selectedFeatures = anchorsWithSameSource.flatMap(_._2.featureNames).toSeq
